@@ -3,6 +3,7 @@ package lib.persistence;
 import android.content.Context;
 
 import app.DbContext;
+import app.repositories.BtDeviceRepository;
 import app.repositories.TodoRepository;
 
 public class RepositoryFactory {
@@ -22,5 +23,9 @@ public class RepositoryFactory {
     // Repository'ler için fabrika metotları
     public static TodoRepository getTodoRepository(Context context) {
         return new TodoRepository(getDbContextInstance(context.getApplicationContext()));
+    }
+
+    public static BtDeviceRepository getBtDeviceRepository(Context context) {
+        return new BtDeviceRepository(getDbContextInstance(context.getApplicationContext()));
     }
 }

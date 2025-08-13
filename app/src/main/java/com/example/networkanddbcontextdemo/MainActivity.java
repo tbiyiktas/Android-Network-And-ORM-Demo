@@ -100,6 +100,19 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
 
+            todoRepository.deleteById(1, new DbCallback<Todo>(){
+                @Override
+                public void onResult(DbResult<Todo> result) {
+                    if(result.isSuccess()) {
+                        Log.d(TAG, "deleteById - Başarılı: " + result.getData());
+                    }
+                    else{
+                        Exception e = ((DbResult.Error<Todo>) result).getException();
+                        Log.e(TAG, "deleteById - Hata: " + e.getMessage());
+                    }
+                }
+            });
+
             todoRepository.selectAll(new DbCallback<ArrayList<Todo>>() {
                 @Override
                 public void onResult(DbResult<ArrayList<Todo>> result) {

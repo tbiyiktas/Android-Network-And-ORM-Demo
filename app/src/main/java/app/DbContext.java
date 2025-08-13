@@ -4,6 +4,7 @@ package app;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 
+import app.model.BtDevice;
 import lib.persistence.ADbContext;
 import lib.persistence.command.definition.CreateTableCommand;
 import lib.persistence.command.definition.DropTableCommand;
@@ -11,7 +12,7 @@ import app.model.Todo;
 
 public class DbContext extends ADbContext {
     private static final String dbName = "local.db";
-    private static final int version = 4;
+    private static final int version = 5;
 
     public DbContext(Context context) {
         super(context, dbName, null, version);
@@ -23,6 +24,8 @@ public class DbContext extends ADbContext {
         // Bu metod, veritabanı ilk kez oluşturulduğunda çalışır.
 
         sqLiteDatabase.execSQL(CreateTableCommand.build(Todo.class).getQuery());
+        sqLiteDatabase.execSQL(CreateTableCommand.build(BtDevice.class).getQuery());
+
     }
 
     @Override
@@ -33,6 +36,7 @@ public class DbContext extends ADbContext {
         // Bu basit bir upgrade stratejisidir (tüm tabloları silip yeniden oluşturur).
         // Gerçek projelerde veri kaybını önlemek için daha gelişmiş migration adımları uygulanmalıdır.
         sqLiteDatabase.execSQL(DropTableCommand.build(Todo.class).getQuery());
+        sqLiteDatabase.execSQL(DropTableCommand.build(BtDevice.class).getQuery());
 
         onCreate(sqLiteDatabase);
     }
