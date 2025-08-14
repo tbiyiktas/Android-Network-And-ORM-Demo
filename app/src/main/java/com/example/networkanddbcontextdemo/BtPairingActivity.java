@@ -1,150 +1,304 @@
 package com.example.networkanddbcontextdemo;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import java.util.List;
 
 import app.model.BtDevice;
 import app.repositories.BtDeviceRepository;
-import lib.bt.android.AndroidBluetoothAdapter;
-import lib.bt.android.BluetoothClient;
-import lib.bt.callbacks.PairingCallback;
+import lib.bt.client.IBluetoothClient;
 import lib.bt.interfaces.IBluetoothDevice;
+import lib.bt.model.BtResult;
 import lib.persistence.DbCallback;
 import lib.persistence.DbResult;
 import lib.persistence.RepositoryFactory;
 
 public class BtPairingActivity extends AppCompatActivity {
-    private static final String TAG = "BtPairingActivity";
 
-    public static final String EXTRA_DEVICE_ADDRESS = "device_address";
-    public static final String EXTRA_DEVICE_NAME = "device_name";
+    public static final String EXTRA_DEVICE_ADDRESS = "extra_device_address";
+    public static final String EXTRA_DEVICE_NAME    = "extra_device_name";
 
-    private BluetoothClient bluetoothClient;
+    private static final int RC_BT_CONNECT = 201;
+
+    private IBluetoothClient bt;
 
     private TextView deviceNameTextView;
     private TextView pairingStatusTextView;
     private ProgressBar pairingProgressBar;
     private Button saveButton;
+    private Button cancelButton;
 
+    private String deviceAddress;
+    private String deviceName;
     private IBluetoothDevice deviceToPair;
-    private final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    private boolean pairingInProgress = false;
+
+    @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_btpairing);
 
-        deviceNameTextView = findViewById(R.id.deviceNameTextView);
+        bt = MyApplication.getBluetoothClient();
+
+        deviceNameTextView    = findViewById(R.id.deviceNameTextView);
         pairingStatusTextView = findViewById(R.id.pairingStatusTextView);
-        pairingProgressBar = findViewById(R.id.pairingProgressBar);
-        saveButton = findViewById(R.id.saveButton);
+        pairingProgressBar    = findViewById(R.id.pairingProgressBar);
+        saveButton            = findViewById(R.id.saveButton);
+        cancelButton          = findViewById(R.id.cancelButton);
 
-        AndroidBluetoothAdapter customAdapter = new AndroidBluetoothAdapter(this);
-        bluetoothClient = new BluetoothClient(customAdapter, customAdapter, customAdapter);
+        Intent it = getIntent();
+        deviceAddress = it.getStringExtra(EXTRA_DEVICE_ADDRESS);
+        deviceName    = it.getStringExtra(EXTRA_DEVICE_NAME);
 
-        Intent intent = getIntent();
-        if (intent != null) {
-            String deviceAddress = intent.getStringExtra(EXTRA_DEVICE_ADDRESS);
-            if (deviceAddress != null) {
-                deviceToPair = bluetoothClient.getDeviceFromAddress(deviceAddress);
-                if (deviceToPair != null) {
-                    deviceNameTextView.setText(deviceToPair.getName() != null ? deviceToPair.getName() : deviceAddress);
-                    startPairing(deviceToPair);
-                } else {
-                    Toast.makeText(this, "Geçersiz cihaz adresi.", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            } else {
-                Toast.makeText(this, "Cihaz adresi yok.", Toast.LENGTH_SHORT).show();
-                finish();
-            }
+        if (deviceAddress == null || deviceAddress.isEmpty()) {
+            toast("Geçersiz cihaz adresi");
+            finish(); return;
         }
 
+        deviceNameTextView.setText(deviceName != null && !deviceName.isEmpty() ? deviceName : deviceAddress);
+        setBusy(false);
+        showSave(false);
+
+        // Pairing durumlarını dinle (yalnızca hedef cihaza tepki ver)
+        bt.onPairingStatusChanged(ps -> {
+            if (ps.getDevice() == null || ps.getDevice().getAddress() == null) return;
+            if (!deviceAddress.equals(ps.getDevice().getAddress())) return;
+
+            if (ps.isPaired()) {
+                pairingStatusTextView.setText("Eşleştirme başarılı");
+                pairingInProgress = false;
+                setBusy(false);
+                showSave(true);
+            } else if (ps.isFinal()) {
+                pairingStatusTextView.setText("Eşleştirme başarısız");
+                pairingInProgress = false;
+                setBusy(false);
+                showSave(false);
+            } else {
+                pairingStatusTextView.setText("Eşleştiriliyor…");
+            }
+        });
+
+        // Butonlar
+        cancelButton.setOnClickListener(v -> {
+            if (pairingInProgress) {
+                bt.cancelPairing();
+                bt.stopListeningForPairingStatus();
+                pairingInProgress = false;
+                setBusy(false);
+                showSave(false);
+                pairingStatusTextView.setText("İptal edildi");
+            } else {
+                finish();
+            }
+        });
+
         saveButton.setOnClickListener(v -> savePairedDevice());
+
+        // İzin kapısı → zaten eşleşmiş mi? → değilse eşleştirmeyi başlat
+        ensureConnectPermThenStart();
     }
 
-    private void startPairing(IBluetoothDevice device) {
-        pairingStatusTextView.setText("Eşleştirme başlatılıyor...");
-        pairingProgressBar.setVisibility(View.VISIBLE);
-        saveButton.setVisibility(View.GONE);
+    @Override protected void onStop() {
+        super.onStop();
+        // Yayıncıları kapatmak için
+        bt.stopListeningForPairingStatus();
+        pairingInProgress = false;
+        setBusy(false);
+    }
 
-        bluetoothClient.pairDevice(device, new PairingCallback() {
-            @Override
-            public void onPairingStarted(IBluetoothDevice startedDevice) {
-                mainThreadHandler.post(() -> {
-                    pairingStatusTextView.setText("Eşleşiyor...");
-                    Log.d(TAG, startedDevice.getName() + " eşleştirme başladı.");
-                });
-            }
+    // ---------- Akış ----------
 
-            @Override
-            public void onPairingSuccess(IBluetoothDevice pairedDevice) {
-                mainThreadHandler.post(() -> {
-                    pairingStatusTextView.setText("Eşleştirme başarılı!");
-                    pairingProgressBar.setVisibility(View.GONE);
-                    saveButton.setVisibility(View.VISIBLE);
-                    Toast.makeText(BtPairingActivity.this, "Cihaz eşleştirildi: " + pairedDevice.getName(), Toast.LENGTH_SHORT).show();
-                });
-            }
+    private void ensureConnectPermThenStart() {
+        if (!hasBtConnectPerm()) {
+            ActivityCompat.requestPermissions(this, requiredPairingPerms(), RC_BT_CONNECT);
+            return;
+        }
+        if (isAlreadyPaired()) {
+            pairingStatusTextView.setText("Zaten eşleşmiş");
+            showSave(true);
+        } else {
+            startPairing();
+        }
+    }
 
-            @Override
-            public void onPairingFailed(IBluetoothDevice failedDevice, String errorMessage) {
-                mainThreadHandler.post(() -> {
-                    pairingStatusTextView.setText("Eşleştirme başarısız: " + errorMessage);
-                    pairingProgressBar.setVisibility(View.GONE);
-                    Toast.makeText(BtPairingActivity.this, "Eşleştirme başarısız: " + errorMessage, Toast.LENGTH_LONG).show();
-                });
+    private void startPairing() {
+        // Sadece adres/ad ile basit bir cihaz nesnesi
+        deviceToPair = new SimpleDevice(deviceAddress, deviceName);
+
+        setBusy(true);
+        showSave(false);
+        pairingStatusTextView.setText("Eşleştiriliyor…");
+        pairingInProgress = true;
+
+        bt.pairAsync(deviceToPair, (BtResult<IBluetoothDevice> res) -> {
+            pairingInProgress = false;
+            if (res.isSuccess()) {
+                pairingStatusTextView.setText("Eşleştirme başarılı");
+                setBusy(false);
+                showSave(true);
+            } else if (res.isCancelled()) {
+                pairingStatusTextView.setText("İşlem iptal/zaman aşımı");
+                setBusy(false);
+                showSave(false);
+            } else {
+                pairingStatusTextView.setText("Eşleştirme hatası");
+                setBusy(false);
+                showSave(false);
+                Exception e = res.errorOrNull();
+                if (e != null && e.getMessage() != null) toast(e.getMessage());
             }
         });
     }
 
+    private boolean isAlreadyPaired() {
+        List<IBluetoothDevice> bonded = bt.getPairedDevices(); // CONNECT izni gerekli olabilir
+        if (bonded == null) return false;
+        for (IBluetoothDevice d : bonded) {
+            if (d != null && deviceAddress.equals(d.getAddress())) {
+                deviceToPair = d;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---------- UI ----------
+
+    private void setBusy(boolean inProgress) {
+        pairingProgressBar.setVisibility(inProgress ? View.VISIBLE : View.GONE);
+        cancelButton.setVisibility(inProgress ? View.VISIBLE : View.GONE);
+        cancelButton.setEnabled(inProgress);
+        saveButton.setEnabled(!inProgress);
+    }
+
+    private void showSave(boolean show) {
+        saveButton.setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+
+    private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
+
+    // ---------- Permission ----------
+
+    private boolean hasBtConnectPerm() {
+        for (String p : requiredPairingPerms()) {
+            if (ContextCompat.checkSelfPermission(this, p) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String[] requiredPairingPerms() {
+        if (Build.VERSION.SDK_INT >= 31) {
+            return new String[]{ Manifest.permission.BLUETOOTH_CONNECT };
+        } else {
+            // 31 altı için ek bir runtime izin gerekmez; eski cihazlarda pairing için genelde manifest yeter
+            return new String[]{};
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] perms, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, perms, grantResults);
+        if (requestCode == RC_BT_CONNECT) {
+            if (hasBtConnectPerm()) {
+                ensureConnectPermThenStart();
+            } else {
+                toast("Eşleştirme için Bluetooth izni gerekli.");
+                finish();
+            }
+        }
+    }
+
+    // ---------- Kaydet (senin mevcut DB akışın) ----------
     private void savePairedDevice() {
         if (deviceToPair == null) {
             Toast.makeText(this, "Eşleştirilmiş bir cihaz yok.", Toast.LENGTH_SHORT).show();
             return;
         }
-        BtDevice btDevice = new BtDevice();
+
+        // Çift tıklamayı engelle
+        saveButton.setEnabled(false);
+
+        final BtDevice btDevice = new BtDevice();
         btDevice.name = deviceToPair.getName();
         btDevice.address = deviceToPair.getAddress();
 
-        BtDeviceRepository btDeviceRepository = RepositoryFactory.getBtDeviceRepository(getApplicationContext());
+        final BtDeviceRepository repo = RepositoryFactory.getBtDeviceRepository(getApplicationContext());
+        if (repo == null) {
+            runOnUiThread(() -> {
+                saveButton.setEnabled(true);
+                Toast.makeText(this, "Veritabanı hazır değil.", Toast.LENGTH_LONG).show();
+            });
+            return;
+        }
 
-        btDeviceRepository.deleteAll(new DbCallback<Integer>() {
+        // 1) Öncekileri sil → 2) Ekle
+        repo.deleteAll(new DbCallback<Integer>() {
             @Override
-            public void onResult(DbResult<Integer> result) {
-                if (result.isSuccess()) {
-                    Log.d(TAG, "Önceki cihaz başarıyla silindi.");
-                } else {
-                    Log.e(TAG, "Önceki cihaz silinirken hata oluştu.");
-                }
+            public void onResult(DbResult<Integer> delResult) {
+                // UI işlemlerini ana threade post et
+                runOnUiThread(() -> {
+                    if (!delResult.isSuccess()) {
+                        // Silme başarısız olsa da eklemeyi deneyebiliriz (iş mantığına göre)
+                        // İstersen burada return edip butonu açabilirsin.
+                    }
+                });
 
-                btDeviceRepository.insert(btDevice, new DbCallback<BtDevice>() {
+                repo.insert(btDevice, new DbCallback<BtDevice>() {
                     @Override
-                    public void onResult(DbResult<BtDevice> result) {
-                        if (result.isSuccess()) {
-                            Toast.makeText(BtPairingActivity.this, deviceToPair.getName() + " kaydedildi.", Toast.LENGTH_LONG).show();
+                    public void onResult(DbResult<BtDevice> insResult) {
+                        runOnUiThread(() -> {
+                            if (insResult.isSuccess()) {
+                                Toast.makeText(BtPairingActivity.this,
+                                        deviceToPair.getName() + " kaydedildi.",
+                                        Toast.LENGTH_LONG).show();
 
-                            Intent controlIntent = new Intent(BtPairingActivity.this, BtControlActivity.class);
-                            controlIntent.putExtra(BtControlActivity.EXTRA_DEVICE_ADDRESS, deviceToPair.getAddress());
-                            startActivity(controlIntent);
+                                Intent control = new Intent(BtPairingActivity.this, BtControlActivity.class);
+                                control.putExtra(BtControlActivity.EXTRA_DEVICE_ADDRESS, deviceToPair.getAddress());
+                                control.putExtra(BtControlActivity.EXTRA_DEVICE_NAME, deviceToPair.getName());
+                                control.putExtra(BtControlActivity.EXTRA_AUTO_CONNECT, true); // istersen otomatik bağlansın
+                                startActivity(control);
 
-                            finish();
-                        } else {
-                            Toast.makeText(BtPairingActivity.this, deviceToPair.getName() + " kaydedilemedi.", Toast.LENGTH_LONG).show();
-                        }
+                                finish();
+                            } else {
+                                saveButton.setEnabled(true);
+                                Toast.makeText(BtPairingActivity.this,
+                                        deviceToPair.getName() + " kaydedilemedi.",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
                     }
                 });
             }
         });
+    }
+
+
+    // ---------- Basit cihaz adaptörü ----------
+    private static final class SimpleDevice implements IBluetoothDevice {
+        private final String addr;
+        private final String name;
+        SimpleDevice(String addr, String name) { this.addr = addr; this.name = name; }
+        @Override public String getAddress() { return addr; }
+        @Override public String getName() { return (name != null && !name.isEmpty()) ? name : addr; }
+        @Override public Type getType() { return Type.UNKNOWN; }
+        @Override public BondState getBondState() { return BondState.NONE; }
     }
 }

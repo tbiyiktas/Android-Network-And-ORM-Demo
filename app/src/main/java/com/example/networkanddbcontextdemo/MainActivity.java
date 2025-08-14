@@ -14,12 +14,12 @@ import java.util.List;
 
 import app.api.TodoApi;
 import app.model.Todo;
+import app.repositories.TodoRepository;
 import lib.net.NetResult;
 import lib.net.NetworkCallback;
 import lib.persistence.DbCallback;
 import lib.persistence.DbResult;
 import lib.persistence.RepositoryFactory;
-import app.repositories.TodoRepository;
 
 public class MainActivity extends AppCompatActivity {
 

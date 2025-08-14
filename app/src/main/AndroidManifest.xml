@@ -7,16 +7,13 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
-    <uses-permission
-        android:name="android.permission.ACCESS_COARSE_LOCATION"
-        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH"
-        android:maxSdkVersion="30" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_ADMIN"
-        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <application
         android:name=".MyApplication"
@@ -32,20 +29,30 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".BtControlActivity"
-            android:exported="false"
-            android:theme="@style/Theme.NetworkAndDbContextDemo" />
+            android:exported="false" />
         <activity
             android:name=".BtActivity"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".BtPairingActivity"
             android:exported="false">
+        </activity>
+        <activity
+            android:name=".CameraActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".CameraCaptureActivity"
+            android:exported="false">
+        </activity>
+        <activity android:name=".MainActivity" android:exported="false">
+        </activity>
+        <activity android:name=".LocationActivity"  android:exported="false" >
         </activity>
     </application>
 

@@ -1,9 +1,9 @@
 package lib.persistence.command.manipulation;
 
-import lib.persistence.annotations.DbTableAnnotation;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import lib.persistence.annotations.DbTableAnnotation;
 
 public class DeleteSql {
     private Class<?> type;

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Üstte kontrollerin bulunduğu bar -->
+    <LinearLayout
+        android:id="@+id/controlsBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- (Var olan diğer kontrolleriniz burada kalsın) -->
+        <!-- <View ... /> / <Spinner ... /> / <EditText ... /> -->
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Konum kapalıysa görünen buton; diğer kontrollerle aynı bar içinde -->
+        <Button
+            android:id="@+id/btnEnableLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Konumu Aç"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Kontrol barının ALTINDA, RecyclerView'in ÜSTÜNDE: Son konum metni -->
+    <TextView
+        android:id="@+id/txtLatest"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Son (≤60sn, ≤30m): —"
+        android:typeface="monospace"
+        android:textSize="14sp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        app:layout_constraintTop_toBottomOf="@id/controlsBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- En altta liste -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvHistory"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/txtLatest"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

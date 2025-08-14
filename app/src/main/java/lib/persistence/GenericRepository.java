@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import lib.persistence.command.manipulation.InsertCommand;
 import lib.persistence.command.manipulation.UpdateCommand;
 import lib.persistence.command.query.Select;
-import lib.persistence.domain.entities.Todo;
 import lib.persistence.profile.Mapper;
 
 public abstract class GenericRepository<T> {

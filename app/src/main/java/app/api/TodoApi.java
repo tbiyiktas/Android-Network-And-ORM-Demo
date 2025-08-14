@@ -28,4 +28,14 @@ public class TodoApi extends ABaseApi {
         // relativePath, queryParams, headers, responseType, callback
         get("/todos", null, null, todoListType, callback);
     }
+
+    public void postTodo(NetworkCallback<List<Todo>> callback) {
+        // Geri dönüş tipini tanımlıyoruz
+        Type todoListType = new TypeToken<List<Todo>>() {}.getType();
+
+        // ABaseApi'den gelen 'get' metodunu kullanarak API çağrısını yapıyoruz
+        // Parametreleri doğru sırayla iletiyoruz:
+        // relativePath, queryParams, headers, responseType, callback
+        post("/todos", null, null, Todo.class, callback);
+    }
 }

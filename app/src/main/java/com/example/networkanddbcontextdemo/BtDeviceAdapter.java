@@ -1,102 +1,84 @@
-
-package com.example.networkanddbcontextdemo.adapter;
+package com.example.networkanddbcontextdemo;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.networkanddbcontextdemo.R;
-import com.example.networkanddbcontextdemo.adapter.BtDeviceAdapter.BtDeviceViewHolder;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import lib.bt.interfaces.IBluetoothDevice;
 
-import java.util.List;
+public final class BtDeviceAdapter extends RecyclerView.Adapter<BtDeviceAdapter.VH> {
 
-public class BtDeviceAdapter extends RecyclerView.Adapter<BtDeviceViewHolder> {
+    private final List<IBluetoothDevice> items;
+    private final Consumer<IBluetoothDevice> onClick;
 
-    private List<IBluetoothDevice> devices;
-    private OnDeviceClickListener listener;
-    private int selectedPosition = RecyclerView.NO_POSITION;
-
-    public BtDeviceAdapter(List<IBluetoothDevice> devices) {
-        this.devices = devices;
+    public BtDeviceAdapter(@NonNull List<IBluetoothDevice> items,
+                           @NonNull Consumer<IBluetoothDevice> onClick) {
+        this.items = Objects.requireNonNull(items);
+        this.onClick = Objects.requireNonNull(onClick);
+        setHasStableIds(true);
     }
 
-    public void setOnDeviceClickListener(OnDeviceClickListener listener) {
-        this.listener = listener;
+    @Override public long getItemId(int position) {
+        IBluetoothDevice d = items.get(position);
+        String addr = d != null ? d.getAddress() : null;
+        return addr != null ? addr.hashCode() : RecyclerView.NO_ID;
     }
 
-    // Arayüz tanımı
-    public interface OnDeviceClickListener {
-        void onDeviceClick(IBluetoothDevice device);
+    @NonNull @Override
+    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.btdevice_item, parent, false);
+        return new VH(v);
     }
 
-    @NonNull
-    @Override
-    public BtDeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.btdevice_item, parent, false);
-        return new BtDeviceViewHolder(view);
+    @Override public void onBindViewHolder(@NonNull VH h, int position) {
+        IBluetoothDevice d = items.get(position);
+        h.bind(d);
+        h.itemView.setOnClickListener(v -> onClick.accept(d));
     }
 
-    @Override
-    public void onBindViewHolder(@NonNull BtDeviceViewHolder holder, int position) {
-        IBluetoothDevice device = devices.get(position);
-        holder.deviceName.setText(device.getName());
-        holder.deviceAddress.setText(device.getAddress());
+    @Override public int getItemCount() { return items.size(); }
 
-        // Seçili öğenin arka planını değiştirme
-        if (selectedPosition == position) {
-            holder.itemView.setBackgroundResource(R.color.colorSelectedItem); // Seçili renk
-        } else {
-            //holder.itemView.setBackgroundResource(R.color.t); // Varsayılan renk
+    public void addOrUpdate(IBluetoothDevice device) {
+        if (device == null) return;
+        String addr = device.getAddress();
+        if (addr == null) return;
+        int idx = indexOf(addr);
+        if (idx >= 0) { items.set(idx, device); notifyItemChanged(idx); }
+        else { items.add(device); notifyItemInserted(items.size() - 1); }
+    }
+    public void clear() { items.clear(); notifyDataSetChanged(); }
+    private int indexOf(String addr) {
+        for (int i=0;i<items.size();i++) {
+            IBluetoothDevice d = items.get(i);
+            if (d != null && addr.equals(d.getAddress())) return i;
         }
-
-        // Tıklama dinleyicisi
-        holder.itemView.setOnClickListener(v -> {
-            int previousSelectedPosition = selectedPosition;
-            selectedPosition = holder.getAdapterPosition();
-            notifyItemChanged(previousSelectedPosition);
-            notifyItemChanged(selectedPosition);
-
-            if (listener != null) {
-                listener.onDeviceClick(device);
-            }
-        });
+        return -1;
     }
 
-    @Override
-    public int getItemCount() {
-        return devices.size();
-    }
-
-    public void updateDevices(List<IBluetoothDevice> newDevices) {
-        this.devices.clear();
-        this.devices.addAll(newDevices);
-        notifyDataSetChanged();
-    }
-
-    public static class BtDeviceViewHolder extends RecyclerView.ViewHolder {
-        public TextView deviceName;
-        public TextView deviceAddress;
-
-        public BtDeviceViewHolder(View view) {
-            super(view);
-            deviceName = view.findViewById(R.id.deviceNameTextView);
-            deviceAddress = view.findViewById(R.id.deviceAddressTextView);
+    static final class VH extends RecyclerView.ViewHolder {
+        final TextView tvName, tvAddress, tvType, tvBond;
+        VH(@NonNull View v) {
+            super(v);
+            tvName = v.findViewById(R.id.tvName);
+            tvAddress = v.findViewById(R.id.tvAddress);
+            tvType = v.findViewById(R.id.tvType);
+            tvBond = v.findViewById(R.id.tvBond);
         }
-    }
-
-    public void addDevice(IBluetoothDevice device) {
-        if (!devices.contains(device)) {
-            devices.add(device);
-            notifyItemInserted(devices.size() - 1);
+        void bind(IBluetoothDevice d) {
+            if (d == null) return;
+            tvName.setText(d.getName());
+            tvAddress.setText(d.getAddress());
+            tvType.setText(d.getType() != null ? d.getType().name() : "UNKNOWN");
+            IBluetoothDevice.BondState b = d.getBondState();
+            tvBond.setText(b != null ? b.name() : "NONE");
         }
-    }
-    public void clearDevices() {
-        this.devices.clear();
-        notifyDataSetChanged();
     }
 }

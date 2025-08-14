@@ -26,8 +26,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     buildFeatures {
         viewBinding  = true
@@ -41,8 +41,15 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
 
+
+
+    implementation("androidx.lifecycle:lifecycle-process:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime:2.8.4")
+    implementation("com.google.android.gms:play-services-location:+")
+
     implementation ("com.google.code.gson:gson:2.10.1")
     implementation("com.squareup.okhttp3:okhttp:4.9.0")
+    
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
 

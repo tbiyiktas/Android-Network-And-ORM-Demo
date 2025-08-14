@@ -1,10 +1,11 @@
 package lib.persistence.command.manipulation;
 
 import android.content.ContentValues;
-import lib.persistence.annotations.DbTableAnnotation;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import lib.persistence.annotations.DbTableAnnotation;
 
 public class UpdateSql {
     private Class<?> type;

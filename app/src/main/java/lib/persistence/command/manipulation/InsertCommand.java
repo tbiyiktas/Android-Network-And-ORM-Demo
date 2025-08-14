@@ -1,10 +1,8 @@
 package lib.persistence.command.manipulation;
 
 import android.content.ContentValues;
-import lib.persistence.annotations.DbTableAnnotation;
-import lib.persistence.profile.Mapper;
 
-import java.util.ArrayList;
+import lib.persistence.profile.Mapper;
 
 
 public class InsertCommand {

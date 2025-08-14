@@ -1,20 +1,11 @@
 package lib.persistence.command.query;
 
 
-import lib.persistence.annotations.DbTableAnnotation;
-import lib.persistence.profile.Mapper;
-import java.util.ArrayList;
-import java.util.Collections;
-import lib.persistence.annotations.DbTableAnnotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lib.persistence.annotations.DbTableAnnotation;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * SQL SELECT sorgusu oluşturmak için Builder desenini uygulayan genel bir sınıf.

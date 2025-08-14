@@ -1,9 +1,21 @@
 package lib.bt.interfaces;
 
-// Veri iletimi (RFCOMM/GATT fark etmeksizin) ayrı bir katman
+import java.util.function.Consumer;
+
+/**
+ * Veri iletimi: gönder/al ve yaşam döngüsü (attach/detach).
+ * Bağlantı kurma bu katmanın işi değildir.
+ */
 public interface IBluetoothTransport {
+
     boolean send(byte[] data);
-    void onDataReceived(java.util.function.Consumer<byte[]> cb);
-    void attachTo(java.util.Optional<Object> lowLevelChannel);
+
+    void onDataReceived(Consumer<byte[]> callback);
+
+    /** Connector tarafından sağlanan düşük seviye kanala bağlanır. */
+    void attach(Object lowLevelChannel);
+
+    /** Kanalı bırakır ve arka plan okuma işlemlerini durdurur. */
     void detach();
+    void onClosed(Runnable callback);
 }

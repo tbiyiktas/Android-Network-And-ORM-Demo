@@ -1,9 +1,7 @@
 package lib.persistence.command.definition;
 
 
-
 import lib.persistence.annotations.DbTableAnnotation;
-import lib.persistence.profile.Mapper;
 
 public class CreateIndexCommand {
 

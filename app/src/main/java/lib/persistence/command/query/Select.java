@@ -1,13 +1,11 @@
 package lib.persistence.command.query;
 
 
-import lib.persistence.ADbContext;
-import lib.persistence.annotations.DbTableAnnotation;
-import lib.persistence.profile.RowMapper;
-import android.database.Cursor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import lib.persistence.annotations.DbTableAnnotation;
 
 /**
  * SQL SELECT sorgusu oluşturmak için Builder desenini uygulayan generic bir sınıf.

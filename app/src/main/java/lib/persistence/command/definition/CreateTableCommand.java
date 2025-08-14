@@ -2,12 +2,11 @@ package lib.persistence.command.definition;
 
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import lib.persistence.profile.DbColumn;
 import lib.persistence.profile.Mapper;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class CreateTableCommand {
     private Class<?> type;
