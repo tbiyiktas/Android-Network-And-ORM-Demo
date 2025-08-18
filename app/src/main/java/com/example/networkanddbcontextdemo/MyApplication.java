@@ -19,6 +19,7 @@ import lib.location.StaticLocationConfigProvider;
 import lib.location.runtime.LocationDispatcher;
 import lib.net.NetworkManager;
 import lib.net.connection.OkHttpConnectionFactory;
+import lib.net.parser.PassthroughResponseParser;
 
 
 public class MyApplication extends Application {
@@ -43,6 +44,7 @@ public class MyApplication extends Application {
         networkManager = new NetworkManager.Builder()
                 .basePath("https://api.example.com")
                 .factory(new OkHttpConnectionFactory())
+                //.parser(new PassthroughResponseParser())
                 .build();
 
         // ---- Bluetooth ----
